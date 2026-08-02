@@ -1,5 +1,9 @@
 # nnscope
 
+[![CI](https://github.com/fayadhkader-design/testetstest/actions/workflows/ci.yml/badge.svg)](https://github.com/fayadhkader-design/testetstest/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13-blue)](https://github.com/fayadhkader-design/testetstest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Watch a neural network learn, live — and rewind it.
 
 Two lines in any PyTorch training loop opens a dashboard that shows the network's
@@ -41,7 +45,7 @@ The projection is the hard part, and it's where most naive versions of this fall
 pip install -e .
 ```
 
-Requires Python 3.9+. `numpy` and `websockets` come with it; bring your own `torch`.
+Requires Python 3.10+. `numpy` and `websockets` come with it; bring your own `torch`.
 For the examples:
 
 ```bash
