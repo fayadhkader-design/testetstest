@@ -77,18 +77,35 @@ export class LineChart {
     this.layer = new Layer(canvas);
     this.color = color;
     this.points = [];
+    this.visible = 0;
     this.log = false;
     this.hover = null;
     this.range = [0, 1];
   }
 
-  setData(points) {
+  /**
+   * @param points every point in the retained history
+   * @param visible how many to draw, counting from the start
+   *
+   * Both axes are scaled from the *full* history even when only a prefix is
+   * drawn. Rewinding then just walks the endpoint back along a fixed axis;
+   * rescaling to the visible slice instead would rewrite the curve's shape
+   * under the user every time they moved the scrubber.
+   */
+  setData(points, visible = points.length) {
     this.points = points;
-    // A loss falling from 2.3 to 0.02 is unreadable on a linear axis; switch
-    // once the span is wide enough for the detail to be lost.
+    this.visible = Math.max(0, Math.min(visible, points.length));
+
     const values = points.map((p) => p.y).filter(Number.isFinite);
+    if (!values.length) {
+      this.range = [0, 1];
+      this.log = false;
+      return;
+    }
     const min = Math.min(...values);
     const max = Math.max(...values);
+    // A loss falling from 2.3 to 0.02 is unreadable on a linear axis; switch
+    // once the span is wide enough for the detail to be lost.
     this.log = values.length > 1 && min > 0 && max / min > 25;
     this.range = [min, max];
   }
@@ -97,14 +114,14 @@ export class LineChart {
     this.hover = index;
   }
 
-  /** Nearest sample to a canvas-space x, or null when out of range. */
+  /** Nearest drawn sample to a canvas-space x, or null when out of range. */
   pick(x) {
-    if (!this.points.length || !this.layer.width) return null;
+    if (!this.visible || !this.layer.width) return null;
     const { left, right } = this.plotBox();
     const ratio = (x - left) / Math.max(1, right - left);
     if (ratio < -0.05 || ratio > 1.05) return null;
     const index = Math.round(ratio * (this.points.length - 1));
-    return Math.min(this.points.length - 1, Math.max(0, index));
+    return Math.min(this.visible - 1, Math.max(0, index));
   }
 
   plotBox() {
@@ -156,8 +173,8 @@ export class LineChart {
       ctx.stroke();
     }
 
-    const usable = this.points.filter((p) => Number.isFinite(p.y));
-    if (usable.length < 2) return;
+    const drawn = this.points.slice(0, this.visible);
+    if (drawn.filter((p) => Number.isFinite(p.y)).length < 2) return;
 
     ctx.strokeStyle = this.color;
     ctx.lineWidth = 2;
@@ -165,7 +182,7 @@ export class LineChart {
     ctx.lineCap = "round";
     ctx.beginPath();
     let started = false;
-    this.points.forEach((point, index) => {
+    drawn.forEach((point, index) => {
       if (!Number.isFinite(point.y)) return;
       const at = this.project(index);
       if (started) ctx.lineTo(at.x, at.y);
@@ -179,7 +196,7 @@ export class LineChart {
     const lastIndex = this.lastFiniteIndex();
     if (lastIndex !== null) this.drawMarker(this.project(lastIndex), 3.5);
 
-    if (this.hover !== null && this.hover < this.points.length) {
+    if (this.hover !== null && this.hover < this.visible) {
       if (!Number.isFinite(this.points[this.hover].y)) return;
       const at = this.project(this.hover);
       ctx.strokeStyle = cssVar("--axis");
@@ -193,7 +210,7 @@ export class LineChart {
   }
 
   lastFiniteIndex() {
-    for (let i = this.points.length - 1; i >= 0; i--) {
+    for (let i = this.visible - 1; i >= 0; i--) {
       if (Number.isFinite(this.points[i].y)) return i;
     }
     return null;

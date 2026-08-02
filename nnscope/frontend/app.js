@@ -254,10 +254,9 @@ function render() {
   view.scatter.draw();
 
   for (const [name, chart] of view.charts) {
-    const points = state.frames
-      .slice(0, index + 1)
-      .map((f) => ({ x: f.step, y: f.metrics?.[name] ?? null }));
-    chart.setData(points);
+    // The full history sets the axes; only the rewound prefix gets drawn.
+    const points = state.frames.map((f) => ({ x: f.step, y: f.metrics?.[name] ?? null }));
+    chart.setData(points, index + 1);
     chart.draw();
 
     el(`value-${name}`).textContent = formatMetric(name, frame?.metrics?.[name]);
