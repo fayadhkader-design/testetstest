@@ -19,8 +19,9 @@ import asyncio
 import logging
 import mimetypes
 import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Set
+from typing import Any
 
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.datastructures import Headers
@@ -44,8 +45,8 @@ class DashboardServer:
         self,
         buffer: FrameBuffer,
         controls: Controls,
-        run_info: Callable[[], Dict[str, Any]],
-        status: Callable[[], Dict[str, Any]],
+        run_info: Callable[[], dict[str, Any]],
+        status: Callable[[], dict[str, Any]],
         host: str = "127.0.0.1",
         port: int = 8420,
         static_root: Path = STATIC_ROOT,
@@ -63,7 +64,7 @@ class DashboardServer:
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._shutdown: asyncio.Event | None = None
-        self._clients: Set[asyncio.Queue] = set()
+        self._clients: set[asyncio.Queue] = set()
         self._started = threading.Event()
         self._failure: BaseException | None = None
 
@@ -134,13 +135,13 @@ class DashboardServer:
                 self._port = server.sockets[0].getsockname()[1]
                 self._started.set()
                 await self._shutdown.wait()
-        except BaseException as exc:  # noqa: BLE001 - reported to start()
+        except BaseException as exc:
             self._failure = exc
             self._started.set()
 
     # -- publishing --------------------------------------------------------
 
-    def publish(self, message: Dict[str, Any]) -> None:
+    def publish(self, message: dict[str, Any]) -> None:
         """Queue a message for every connected client. Safe from any thread."""
         if self._loop is None or not self._clients:
             return
@@ -218,7 +219,7 @@ class DashboardServer:
             self._apply(command)
             self.broadcast_state()
 
-    def _apply(self, command: Dict[str, Any]) -> None:
+    def _apply(self, command: dict[str, Any]) -> None:
         kind = command["type"]
         if kind == protocol.PAUSE:
             self._controls.pause()

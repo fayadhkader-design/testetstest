@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 __version__ = "0.1.0"
 
-__all__ = ["Scope", "watch", "__version__"]
+__all__ = ["Scope", "__version__", "watch"]
 
 if TYPE_CHECKING:  # pragma: no cover
     from .session import Scope, watch

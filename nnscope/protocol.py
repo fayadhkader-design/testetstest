@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import json
 import math
-from typing import Any, Dict, Iterable, List, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -53,15 +54,17 @@ def _round(value: float, places: int) -> float | None:
     return None if number is None else round(number, places)
 
 
-def encode(message: Dict[str, Any]) -> str:
+def encode(message: dict[str, Any]) -> str:
     return json.dumps(message, separators=(",", ":"), allow_nan=False)
 
 
-def hello(run: Dict[str, Any]) -> Dict[str, Any]:
+def hello(run: dict[str, Any]) -> dict[str, Any]:
     return {"type": HELLO, "run": run}
 
 
-def state(controls: Dict[str, Any], learning_rate: float | None, step: int) -> Dict[str, Any]:
+def state(
+    controls: dict[str, Any], learning_rate: float | None, step: int
+) -> dict[str, Any]:
     return {
         "type": STATE,
         "controls": controls,
@@ -70,35 +73,35 @@ def state(controls: Dict[str, Any], learning_rate: float | None, step: int) -> D
     }
 
 
-def error(detail: str) -> Dict[str, Any]:
+def error(detail: str) -> dict[str, Any]:
     return {"type": ERROR, "detail": detail}
 
 
-def frame_message(frame: Dict[str, Any]) -> Dict[str, Any]:
+def frame_message(frame: dict[str, Any]) -> dict[str, Any]:
     return {"type": FRAME, "frame": frame}
 
 
-def backfill(frames: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+def backfill(frames: Sequence[dict[str, Any]]) -> dict[str, Any]:
     return {"type": BACKFILL, "frames": list(frames)}
 
 
 def build_frame(
     step: int,
     elapsed: float,
-    metrics: Dict[str, float],
+    metrics: dict[str, float],
     learning_rate: float | None = None,
     coords: np.ndarray | None = None,
     labels: Iterable[int] | None = None,
     explained_variance: float | None = None,
     rotation: float | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Assemble one JSON-safe frame.
 
     ``coords`` is an (n, 2) array. Labels, when present, must line up with it
     row for row; mismatched lengths are a bug worth surfacing immediately
     rather than rendering a silently wrong scatter plot.
     """
-    frame: Dict[str, Any] = {
+    frame: dict[str, Any] = {
         "step": int(step),
         "t": _round(elapsed, 3),
         "metrics": {
@@ -113,7 +116,7 @@ def build_frame(
         if points.ndim != 2 or points.shape[1] != 2:
             raise ValueError(f"coords must be (n, 2), got shape {points.shape}")
 
-        label_list: List[int] | None = None
+        label_list: list[int] | None = None
         if labels is not None:
             label_list = [int(value) for value in labels]
             if len(label_list) != len(points):
@@ -122,7 +125,7 @@ def build_frame(
                 )
 
         rounded = np.round(np.nan_to_num(points, posinf=0.0, neginf=0.0), COORD_PRECISION)
-        embedding: Dict[str, Any] = {
+        embedding: dict[str, Any] = {
             "x": rounded[:, 0].tolist(),
             "y": rounded[:, 1].tolist(),
         }
@@ -137,7 +140,7 @@ def build_frame(
     return frame
 
 
-def parse_command(raw: str | bytes) -> Dict[str, Any]:
+def parse_command(raw: str | bytes) -> dict[str, Any]:
     """Validate one client message, returning a normalized command dict."""
     try:
         message = json.loads(raw)

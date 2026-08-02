@@ -19,7 +19,8 @@ import atexit
 import logging
 import time
 import webbrowser
-from typing import Any, Dict, Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import numpy as np
 import torch
@@ -119,7 +120,11 @@ class Scope:
 
     # -- the one call a training loop makes --------------------------------
 
-    def log(self, labels: Iterable[int] | torch.Tensor | None = None, **metrics: float) -> None:
+    def log(
+        self,
+        labels: Iterable[int] | torch.Tensor | None = None,
+        **metrics: float,
+    ) -> None:
         """Record one training step.
 
         Call once per step, after the optimizer step. Blocks while the run is
@@ -146,7 +151,7 @@ class Scope:
         self._capture.close()
         self._server.stop()
 
-    def __enter__(self) -> "Scope":
+    def __enter__(self) -> Scope:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -167,7 +172,7 @@ class Scope:
         self,
         embeddings: np.ndarray | None,
         labels: Iterable[int] | torch.Tensor | None,
-        metrics: Dict[str, Any],
+        metrics: dict[str, Any],
     ) -> None:
         coords = None
         explained = None
@@ -253,7 +258,7 @@ class Scope:
             return str(param.device)
         return "cpu"
 
-    def _run_info(self) -> Dict[str, Any]:
+    def _run_info(self) -> dict[str, Any]:
         return {
             "model": self._name,
             "layer": self._capture.layer_name or "discovering…",
@@ -261,7 +266,7 @@ class Scope:
             "capacity": self._buffer.capacity,
         }
 
-    def _status(self) -> Dict[str, Any]:
+    def _status(self) -> dict[str, Any]:
         return {
             "controls": self._controls.snapshot(),
             "lr": self._learning_rate(),
@@ -269,6 +274,10 @@ class Scope:
         }
 
 
-def watch(model: nn.Module, optimizer: torch.optim.Optimizer | None = None, **kwargs: Any) -> Scope:
+def watch(
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer | None = None,
+    **kwargs: Any,
+) -> Scope:
     """Attach a scope to a model and open the dashboard. See :class:`Scope`."""
     return Scope(model, optimizer=optimizer, **kwargs)

@@ -105,7 +105,7 @@ def main() -> None:
     )
 
     with scope:
-        for step in range(args.steps):
+        for _step in range(args.steps):
             batch = torch.randint(0, len(x), (args.batch,), device=device)
             inputs, targets = x[batch], y[batch]
 

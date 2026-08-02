@@ -13,7 +13,7 @@ state rather than one caught mid-backward.
 from __future__ import annotations
 
 import threading
-from typing import Any, Dict
+from typing import Any
 
 
 class Controls:
@@ -40,7 +40,7 @@ class Controls:
         with self._cond:
             return self._released
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> dict[str, Any]:
         """A JSON-safe view of control state, for broadcasting to clients."""
         with self._cond:
             return {"paused": self._paused, "stepBudget": self._budget}

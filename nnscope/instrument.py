@@ -15,7 +15,6 @@ order tells the truth about which layer is the head.
 from __future__ import annotations
 
 import threading
-from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -26,7 +25,7 @@ class EmbeddingNotFound(RuntimeError):
     """Raised when no parameterized layer could be identified to attach to."""
 
 
-def parameterized_leaves(model: nn.Module) -> List[Tuple[str, nn.Module]]:
+def parameterized_leaves(model: nn.Module) -> list[tuple[str, nn.Module]]:
     """Leaf modules that own parameters, in definition order.
 
     Containers are skipped -- attaching to an ``nn.Sequential`` would capture
@@ -87,12 +86,12 @@ class EmbeddingCapture:
 
         self._lock = threading.Lock()
         self._latest: np.ndarray | None = None
-        self._handles: List[torch.utils.hooks.RemovableHandle] = []
+        self._handles: list[torch.utils.hooks.RemovableHandle] = []
         self._squeeze: np.ndarray | None = None
 
         self._name: str | None = None
         self._calibrating = False
-        self._order: List[str] = []
+        self._order: list[str] = []
 
         candidates = parameterized_leaves(model)
         if not candidates:
@@ -130,7 +129,7 @@ class EmbeddingCapture:
             handle.remove()
         self._handles.clear()
 
-    def __enter__(self) -> "EmbeddingCapture":
+    def __enter__(self) -> EmbeddingCapture:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -138,7 +137,7 @@ class EmbeddingCapture:
 
     # -- internals ---------------------------------------------------------
 
-    def _resolve(self, module: nn.Module | str) -> Tuple[str, nn.Module]:
+    def _resolve(self, module: nn.Module | str) -> tuple[str, nn.Module]:
         if isinstance(module, str):
             for name, candidate in self._model.named_modules():
                 if name == module:
@@ -150,7 +149,7 @@ class EmbeddingCapture:
                 return name, candidate
         raise EmbeddingNotFound("the given module is not part of this model")
 
-    def _begin_calibration(self, candidates: List[Tuple[str, nn.Module]]) -> None:
+    def _begin_calibration(self, candidates: list[tuple[str, nn.Module]]) -> None:
         """Watch one forward pass to learn which layer runs last."""
         self._calibrating = True
         self._order = []

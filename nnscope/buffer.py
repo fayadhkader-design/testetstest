@@ -9,9 +9,10 @@ goes, and the scrubber in the UI is backed by exactly what is retained here.
 from __future__ import annotations
 
 from collections import deque
-from typing import Any, Dict, Iterator, List
+from collections.abc import Iterator
+from typing import Any
 
-Frame = Dict[str, Any]
+Frame = dict[str, Any]
 
 
 class FrameBuffer:
@@ -47,14 +48,14 @@ class FrameBuffer:
         self._frames.append(frame)
         self._appended += 1
 
-    def extend(self, frames: List[Frame]) -> None:
+    def extend(self, frames: list[Frame]) -> None:
         for frame in frames:
             self.append(frame)
 
     def latest(self) -> Frame | None:
         return self._frames[-1] if self._frames else None
 
-    def frames(self) -> List[Frame]:
+    def frames(self) -> list[Frame]:
         """A snapshot copy, oldest first. Safe to hand to another thread."""
         return list(self._frames)
 

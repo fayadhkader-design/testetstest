@@ -121,7 +121,7 @@ def test_step_accepts_an_explicit_count():
 @pytest.mark.parametrize("bad", ["0", "-3", '"4"', "true", "1.5"])
 def test_step_rejects_bad_counts(bad):
     with pytest.raises(ProtocolError, match="positive integer"):
-        parse_command('{"type":"step","count":%s}' % bad)
+        parse_command(f'{{"type":"step","count":{bad}}}')
 
 
 def test_learning_rate_command():
@@ -131,12 +131,13 @@ def test_learning_rate_command():
 @pytest.mark.parametrize("bad", ['"fast"', "-1", "null", "true"])
 def test_learning_rate_rejects_bad_values(bad):
     with pytest.raises(ProtocolError):
-        parse_command('{"type":"lr","value":%s}' % bad)
+        parse_command(f'{{"type":"lr","value":{bad}}}')
 
 
 def test_shock_defaults_and_overrides():
     assert parse_command('{"type":"shock"}')["magnitude"] == pytest.approx(0.5)
-    assert parse_command('{"type":"shock","magnitude":2}')["magnitude"] == pytest.approx(2.0)
+    explicit = parse_command('{"type":"shock","magnitude":2}')
+    assert explicit["magnitude"] == pytest.approx(2.0)
 
 
 def test_state_message_tolerates_missing_learning_rate():
