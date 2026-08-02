@@ -93,6 +93,10 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute is only a UA `display: none`, so any explicit
+ * display below would silently win over it. Make hiding actually hide. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   padding: 20px;
@@ -210,8 +214,12 @@ body {
 /* ---- plots ------------------------------------------------------------ */
 
 .plot { position: relative; width: 100%; }
-.plot--square { aspect-ratio: 1 / 1; }
 .plot canvas { display: block; width: 100%; height: 100%; }
+
+/* Height-capped rather than a 1:1 aspect-ratio. On a wide card a true square
+ * grows past the viewport and pushes the legend and transport off screen;
+ * the scatter scales off min(width, height) so it does not need to be square. */
+.plot--square { height: min(58vh, 600px); }
 
 .plot__empty {
   position: absolute;
