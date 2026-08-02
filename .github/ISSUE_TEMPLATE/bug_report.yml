@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in nnscope behaves wrongly
+labels: ["bug"]
+
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: >
+        The smallest training loop that shows it. A model definition plus the
+        watch() and log() calls is usually enough.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: "Paste the output of: python -m nnscope"
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output
+      description: >
+        Only if the problem is on the dashboard side. Rendering bugs are usually
+        invisible from the Python process, so this is the part that identifies them.
+      render: text
+    validations:
+      required: false
