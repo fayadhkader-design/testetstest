@@ -27,6 +27,8 @@ export function formatValue(value) {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   const magnitude = Math.abs(value);
   if (magnitude === 0) return "0";
+  // Counters get logged alongside losses; "2.000" for an epoch reads as noise.
+  if (Number.isInteger(value) && magnitude < 1e5) return String(value);
   if (magnitude < 1e-3 || magnitude >= 1e5) return value.toExponential(2);
   if (magnitude < 1) return value.toFixed(4);
   if (magnitude < 100) return value.toFixed(3);

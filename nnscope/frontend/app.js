@@ -202,9 +202,9 @@ function buildLegend() {
   note.hidden = !overflowing;
   if (overflowing) {
     note.textContent =
-      `${state.classes.length} classes. Beyond eight, colour stops being reliably ` +
-      `distinguishable, so it is spent only on the classes you select ` +
-      `(up to ${MAX_HIGHLIGHTS}) — position carries the rest.`;
+      `${state.classes.length} classes — click one to light it up. Beyond eight, ` +
+      `colour stops being reliably distinguishable, so it is spent only on the ` +
+      `classes you select (up to ${MAX_HIGHLIGHTS}); position carries the rest.`;
   }
 
   const colors = classColors();
