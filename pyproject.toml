@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nnscope"
+version = "0.1.0"
+description = "Watch a neural network learn, live, and rewind it."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["deep-learning", "visualization", "pytorch", "training", "debugging"]
+
+# torch is deliberately not a hard dependency: nnscope attaches to whatever
+# torch the user already has, and the core data layer is framework-agnostic.
+dependencies = [
+    "numpy>=1.21",
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+examples = ["torch>=2.0", "torchvision>=0.15"]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Source = "https://github.com/fayadhkader-design/testetstest"
+
+[tool.hatch.build.targets.wheel]
+packages = ["nnscope"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
