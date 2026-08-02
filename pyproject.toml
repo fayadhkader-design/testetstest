@@ -7,7 +7,7 @@ name = "nnscope"
 version = "0.1.0"
 description = "Watch a neural network learn, live, and rewind it."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["deep-learning", "visualization", "pytorch", "training", "debugging"]
 
@@ -20,7 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 examples = ["torch>=2.0", "torchvision>=0.15"]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.6"]
 
 [project.urls]
 Source = "https://github.com/fayadhkader-design/testetstest"
@@ -30,3 +30,25 @@ packages = ["nnscope"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 92
+target-version = "py310"
+
+[tool.ruff.lint]
+# An explicit set rather than whatever the default happens to be, so a ruff
+# upgrade cannot turn a green checkout red on rules nobody opted into.
+select = [
+    "E",    # pycodestyle
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # import sorting
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "RUF",  # ruff-specific
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests reach into private state deliberately to assert on internals that
+# have no public surface, and touch attributes purely to trigger errors.
+"tests/*" = ["B018"]
