@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nnscope</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='none' stroke='%233987e5' stroke-width='2'/></svg>">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__name">nnscope</span>
+      <span class="status" id="status" data-state="connecting">connecting</span>
+    </div>
+
+    <dl class="runmeta" id="runmeta">
+      <div><dt>model</dt><dd id="meta-model">&mdash;</dd></div>
+      <div><dt>layer</dt><dd id="meta-layer">&mdash;</dd></div>
+      <div><dt>device</dt><dd id="meta-device">&mdash;</dd></div>
+      <div><dt>step</dt><dd id="meta-step" class="num">0</dd></div>
+    </dl>
+
+    <div class="topbar__actions">
+      <button type="button" class="btn btn--ghost" id="toggle-table" aria-pressed="false">
+        Table
+      </button>
+      <button type="button" class="btn btn--ghost" id="toggle-theme" title="Switch theme">
+        Theme
+      </button>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <section class="card card--scatter" aria-labelledby="scatter-title">
+      <div class="card__head">
+        <h2 id="scatter-title">Representation</h2>
+        <p class="card__hint">
+          penultimate activations, projected to 2D
+          &middot; <span id="explained">&mdash;</span> of variance
+        </p>
+      </div>
+      <div class="plot plot--square">
+        <canvas id="scatter"></canvas>
+        <p class="plot__empty" id="scatter-empty">waiting for the first frame&hellip;</p>
+      </div>
+      <div class="legend" id="legend" role="group" aria-label="Classes"></div>
+      <p class="legend__note" id="legend-note" hidden></p>
+    </section>
+
+    <div class="column" id="metrics">
+      <p class="column__empty" id="metrics-empty">no metrics reported yet</p>
+    </div>
+
+  </main>
+
+  <section class="card card--table" id="table-view" hidden aria-label="Frame values">
+    <div class="card__head">
+      <h2>Recent frames</h2>
+      <p class="card__hint">the same values the charts are drawing</p>
+    </div>
+    <div class="table-scroll">
+      <table id="frame-table">
+        <thead><tr id="frame-table-head"></tr></thead>
+        <tbody id="frame-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="transport">
+    <div class="scrub">
+      <button type="button" class="btn btn--live is-live" id="live" aria-pressed="true">
+        <span class="live-dot" aria-hidden="true"></span> Live
+      </button>
+      <input type="range" id="timeline" class="timeline" min="0" max="0" value="0"
+             aria-label="Rewind through training history">
+      <output class="scrub__pos num" id="scrub-pos">&mdash;</output>
+    </div>
+
+    <div class="controls">
+      <button type="button" class="btn" id="pause">Pause</button>
+      <button type="button" class="btn" id="stepone" disabled>Step</button>
+
+      <label class="field">
+        <span>lr</span>
+        <input type="number" id="lr" class="num" step="0.0001" min="0" placeholder="&mdash;">
+      </label>
+
+      <button type="button" class="btn btn--warn" id="shock" title="Perturb every weight tensor by a fraction of its own standard deviation">
+        Shock
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<div class="tooltip" id="tooltip" role="status" hidden></div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
