@@ -1,6 +1,7 @@
 /* Dashboard state, transport and wiring. */
 
 import { LineChart, ScatterPlot, cssVar, formatValue, seriesColor } from "./charts.js";
+import { appendFrame, indexForStep, isSameRun } from "./history.js";
 
 const MAX_COLOURED_CLASSES = 8;
 const MAX_HIGHLIGHTS = 3;
@@ -35,11 +36,7 @@ const view = {
 const isLive = () => state.viewStep === null;
 
 function currentIndex() {
-  if (!state.frames.length) return -1;
-  if (isLive()) return state.frames.length - 1;
-  let index = state.frames.findIndex((frame) => frame.step >= state.viewStep);
-  if (index === -1) index = state.frames.length - 1;
-  return index;
+  return indexForStep(state.frames, state.viewStep);
 }
 
 const currentFrame = () => state.frames[currentIndex()] ?? null;
@@ -77,8 +74,8 @@ function formatMetric(name, value) {
 /* ---- ingest ------------------------------------------------------------- */
 
 function ingest(frame) {
-  state.frames.push(frame);
-  while (state.frames.length > state.capacity) state.frames.shift();
+  // Replay from a reconnect is dropped here; see history.js.
+  if (!appendFrame(state.frames, frame, state.capacity)) return;
 
   for (const name of Object.keys(frame.metrics ?? {})) {
     if (!state.metrics.includes(name) && state.metrics.length < MAX_COLOURED_CLASSES) {
@@ -106,6 +103,29 @@ function ingest(frame) {
   view.dirty = true;
 }
 
+/** Tear everything derived from a run back down, so a different run starts
+ *  from a clean slate rather than inheriting the previous one's charts. */
+function resetRun() {
+  state.frames = [];
+  state.metrics = [];
+  state.classes = [];
+  state.selected = new Set();
+  state.viewStep = null;
+
+  view.charts.clear();
+  const empty = el("metrics-empty");
+  empty.hidden = false;
+  el("metrics").replaceChildren(empty);
+
+  el("legend").replaceChildren();
+  el("legend-note").hidden = true;
+
+  view.scatter.setFrame(null);
+  view.scatter.setSelected(state.selected);
+  view.scatter.snap();
+  view.dirty = true;
+}
+
 /* ---- transport ---------------------------------------------------------- */
 
 let socket = null;
@@ -129,6 +149,10 @@ function connect() {
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     if (message.type === "hello") {
+      // A tab left open across a restart reconnects to a different run on the
+      // same port. Splicing the new run's frames onto the old one's would
+      // produce a chart that never happened.
+      if (state.run && !isSameRun(state.run, message.run)) resetRun();
       state.run = message.run;
       state.capacity = message.run.capacity ?? state.capacity;
       applyRunMeta(message.run);
