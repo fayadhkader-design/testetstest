@@ -1,5 +1,6 @@
 import asyncio
 import json
+import socket
 import urllib.error
 import urllib.request
 
@@ -9,7 +10,7 @@ from websockets.asyncio.client import connect
 from nnscope import protocol
 from nnscope.buffer import FrameBuffer
 from nnscope.control import Controls
-from nnscope.server import DashboardServer
+from nnscope.server import DashboardServer, PortUnavailable
 
 
 @pytest.fixture
@@ -222,3 +223,34 @@ def test_stop_is_idempotent(dashboard):
     server, _, _ = dashboard
     server.stop()
     server.stop()
+
+
+def test_busy_port_raises_something_actionable(tmp_path):
+    """The most common startup failure has to say what to do about it."""
+    controls = Controls()
+    with socket.socket() as taken:
+        taken.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        taken.bind(("127.0.0.1", 0))
+        taken.listen()
+        port = taken.getsockname()[1]
+
+        server = DashboardServer(
+            buffer=FrameBuffer(capacity=2),
+            controls=controls,
+            run_info=dict,
+            status=lambda: {"controls": controls.snapshot()},
+            port=port,
+            static_root=tmp_path,
+        )
+        with pytest.raises(PortUnavailable) as excinfo:
+            server.start()
+
+    message = str(excinfo.value)
+    assert "nnscope" in message
+    assert str(port) in message
+    assert "port=0" in message
+
+
+def test_port_unavailable_is_still_an_oserror():
+    # Callers already catching the raw bind failure must keep working.
+    assert issubclass(PortUnavailable, OSError)
