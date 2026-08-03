@@ -198,6 +198,24 @@ def test_run_info_reports_the_model_and_device(model, scope):
     assert info["device"] == "cpu"
 
 
+def test_run_info_carries_an_id(model, scope):
+    assert scope._run_info()["id"]
+
+
+def test_each_run_gets_a_distinct_id(model):
+    """A tab left open across a restart must be able to tell runs apart."""
+    with Scope(model, port=0, open_browser=False) as first:
+        with Scope(model, port=0, open_browser=False) as second:
+            assert first._run_info()["id"] != second._run_info()["id"]
+
+
+def test_run_id_is_stable_within_a_run(model, scope):
+    first = scope._run_info()["id"]
+    train_step(model, scope)
+
+    assert scope._run_info()["id"] == first
+
+
 def test_status_reports_step_and_learning_rate(model, scope):
     train_step(model, scope)
     status = scope._status()

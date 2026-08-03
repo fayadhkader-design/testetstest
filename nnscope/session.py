@@ -18,6 +18,7 @@ from __future__ import annotations
 import atexit
 import logging
 import time
+import uuid
 import webbrowser
 from collections.abc import Iterable, Sequence
 from typing import Any
@@ -85,6 +86,10 @@ class Scope:
 
         self._step = 0
         self._started = time.monotonic()
+        # Identifies this run to the dashboard. A browser tab left open across
+        # a restart reconnects to a completely different run on the same port,
+        # and without an id it would happily splice both runs' frames together.
+        self._run_id = uuid.uuid4().hex[:12]
         self._last_emit = 0.0
         self._closed = False
 
@@ -260,6 +265,7 @@ class Scope:
 
     def _run_info(self) -> dict[str, Any]:
         return {
+            "id": self._run_id,
             "model": self._name,
             "layer": self._capture.layer_name or "discovering…",
             "device": self._device(),
