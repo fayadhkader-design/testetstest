@@ -72,8 +72,8 @@ A small CNN on MNIST. Downloads ~11 MB on first run.
 
 | | |
 |---|---|
-| **Rewind** | Drag the timeline. Every panel snaps back to that step. Release at the end to go live again. |
-| **Pause / Step** | Freeze between steps and advance one at a time. `Space` and `→` work as shortcuts. |
+| **Rewind** | Drag the timeline, or use `←`/`→` (`Shift` for ten at a time). `Home` jumps to the oldest retained frame, `End` returns to live. Every panel snaps back with it. |
+| **Pause / Step** | `Space` freezes between steps; `.` advances one at a time. |
 | **Learning rate** | Type a new one. It reaches the optimizer on the next step. |
 | **Shock** | Perturb every weight tensor by a fraction of its own standard deviation, then watch the clusters collapse and re-form. The fastest way to build intuition that training is a dynamical system and not a monotonic march downhill. |
 | **Isolate a class** | Click a legend chip to dim everything else. |

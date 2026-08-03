@@ -397,13 +397,29 @@ function goLive() {
   state.viewStep = null;
   el("live").classList.add("is-live");
   el("live").setAttribute("aria-pressed", "true");
+  // Snap the thumb here rather than leaving it to the next render, so the
+  // control never disagrees with the state it represents.
+  el("timeline").value = String(Math.max(0, state.frames.length - 1));
   view.scatter.snap();
   view.dirty = true;
+}
+
+/** Move the view by whole frames, from wherever it currently sits. */
+function scrubBy(delta) {
+  const newest = Number(el("timeline").max);
+  const from = isLive() ? newest : currentIndex();
+  scrubTo(Math.min(newest, Math.max(0, from + delta)));
 }
 
 function scrubTo(index) {
   const frame = state.frames[index];
   if (!frame) return;
+
+  // The thumb has to follow the view wherever the move came from -- dragging,
+  // an arrow key, or Home. Assigning `value` fires no input event, so this
+  // cannot loop back through the drag handler that calls it.
+  el("timeline").value = String(index);
+
   const atEnd = index >= state.frames.length - 1;
   state.viewStep = atEnd ? null : frame.step;
   el("live").classList.toggle("is-live", atEnd);
@@ -445,12 +461,42 @@ function wireControls() {
   });
 
   document.addEventListener("keydown", (event) => {
+    // The scrubber is an <input type=range>, so when it has focus the browser
+    // already moves it with the arrow keys. Bailing on inputs keeps this from
+    // running as well and moving it twice per press.
     if (event.target.tagName === "INPUT") return;
-    if (event.code === "Space") {
+
+    // Space is matched on `code` as well as `key`: `code` names the physical
+    // key, so it survives layouts and IMEs where `key` is not a plain space.
+    if (event.code === "Space" || event.key === " ") {
       event.preventDefault();
       send({ type: state.controls.paused ? "resume" : "pause" });
-    } else if (event.code === "ArrowRight" && state.controls.paused) {
-      send({ type: "step", count: 1 });
+      return;
+    }
+
+    switch (event.key) {
+      case "ArrowLeft":
+      case "ArrowRight":
+        event.preventDefault();
+        scrubBy((event.key === "ArrowRight" ? 1 : -1) * (event.shiftKey ? 10 : 1));
+        break;
+
+      case "Home":
+        event.preventDefault();
+        scrubTo(0);
+        break;
+
+      case "End":
+        event.preventDefault();
+        goLive();
+        break;
+
+      // Advancing training one step used to be ArrowRight, which now belongs
+      // to the scrubber. A separate key keeps "move the view" and "move the
+      // run" from being the same gesture.
+      case ".":
+        if (state.controls.paused) send({ type: "step", count: 1 });
+        break;
     }
   });
 }
