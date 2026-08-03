@@ -1,0 +1,10 @@
+{
+  "name": "nnscope-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dashboard frontend for nnscope. No dependencies and no build step; this file exists to declare ES modules and wire up the test runner.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test 'tests/frontend/*.test.js'"
+  }
+}
