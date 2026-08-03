@@ -73,7 +73,7 @@ class DashboardServer:
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._shutdown: asyncio.Event | None = None
-        self._clients: set[asyncio.Queue] = set()
+        self._clients: set[asyncio.Queue[str]] = set()
         self._started = threading.Event()
         self._failure: BaseException | None = None
 
@@ -202,7 +202,7 @@ class DashboardServer:
     # -- connection handling -----------------------------------------------
 
     async def _handle(self, connection: ServerConnection) -> None:
-        queue: asyncio.Queue = asyncio.Queue(maxsize=self._queue_size)
+        queue: asyncio.Queue[str] = asyncio.Queue(maxsize=self._queue_size)
         self._clients.add(queue)
         try:
             await connection.send(protocol.encode(protocol.hello(self._run_info())))
@@ -230,7 +230,7 @@ class DashboardServer:
         finally:
             self._clients.discard(queue)
 
-    async def _send(self, connection: ServerConnection, queue: asyncio.Queue) -> None:
+    async def _send(self, connection: ServerConnection, queue: asyncio.Queue[str]) -> None:
         while True:
             payload = await queue.get()
             await connection.send(payload)

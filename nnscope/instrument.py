@@ -15,6 +15,8 @@ order tells the truth about which layer is the head.
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import torch
@@ -154,8 +156,8 @@ class EmbeddingCapture:
         self._calibrating = True
         self._order = []
 
-        def record(name: str):
-            def hook(_module: nn.Module, _inputs: tuple) -> None:
+        def record(name: str) -> Callable[[nn.Module, tuple[Any, ...]], None]:
+            def hook(_module: nn.Module, _inputs: tuple[Any, ...]) -> None:
                 # Names only. Holding the tensors would pin every candidate
                 # layer's activations in memory for the whole pass.
                 self._order.append(name)
@@ -177,7 +179,7 @@ class EmbeddingCapture:
     def _attach(self, name: str, module: nn.Module) -> None:
         self._name = name
 
-        def hook(_module: nn.Module, inputs: tuple) -> None:
+        def hook(_module: nn.Module, inputs: tuple[Any, ...]) -> None:
             if not inputs or not isinstance(inputs[0], torch.Tensor):
                 return
             matrix = _to_matrix(inputs[0], self._max_points)
@@ -197,4 +199,5 @@ class EmbeddingCapture:
             self._squeeze = rng.standard_normal(
                 (width, self._max_dims)
             ).astype(np.float32) / np.sqrt(self._max_dims)
-        return matrix @ self._squeeze
+        squeezed: np.ndarray = matrix @ self._squeeze
+        return squeezed
