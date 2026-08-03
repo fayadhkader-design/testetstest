@@ -20,7 +20,7 @@ dependencies = [
 
 [project.optional-dependencies]
 examples = ["torch>=2.0", "torchvision>=0.15"]
-dev = ["pytest>=7.0", "ruff>=0.6"]
+dev = ["pytest>=7.0", "ruff>=0.6", "mypy>=1.11"]
 
 [project.urls]
 Source = "https://github.com/fayadhkader-design/testetstest"
@@ -30,6 +30,15 @@ packages = ["nnscope"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+# Strict, because the package ships py.typed. Claiming to be typed and then
+# handing consumers `Any` is worse than shipping nothing at all.
+files = ["nnscope"]
+strict = true
+# torch and websockets carry their own types unevenly across versions; their
+# gaps should not read as failures in this package.
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 92
