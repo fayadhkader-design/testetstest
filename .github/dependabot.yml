@@ -1,0 +1,15 @@
+version: 2
+
+updates:
+  # Actions only. The Python dependencies here are deliberately loose floors
+  # rather than pins, so there is nothing for dependabot to usefully bump --
+  # whereas the action versions have already gone stale once, and noticing
+  # that from a deprecation warning on every run is the slow way to find out.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
