@@ -36,6 +36,40 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+  frontend:
+    name: frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # No install step: the dashboard has no dependencies and no build, and
+      # the tests run on node's built-in runner.
+      - name: Run tests
+        run: npm test
+
+  types:
+    name: types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install CPU-only torch
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install package
+        run: pip install -e ".[dev]"
+
+      - name: Check
+        run: mypy
+
   lint:
     name: lint
     runs-on: ubuntu-latest
