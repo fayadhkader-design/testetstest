@@ -16,6 +16,7 @@ limit.
 from __future__ import annotations
 
 import asyncio
+import errno
 import logging
 import mimetypes
 import threading
@@ -36,6 +37,14 @@ logger = logging.getLogger("nnscope")
 
 WS_PATH = "/ws"
 STATIC_ROOT = Path(__file__).parent / "frontend"
+
+
+class PortUnavailable(OSError):
+    """The dashboard port is already bound by another process.
+
+    Subclasses OSError so code that already catches the raw bind failure keeps
+    working; it exists only to carry a message that says what to do about it.
+    """
 
 
 class DashboardServer:
@@ -98,8 +107,25 @@ class DashboardServer:
         if not self._started.wait(timeout):
             raise RuntimeError(f"server did not start within {timeout}s")
         if self._failure is not None:
-            raise self._failure
+            raise self._explain(self._failure)
         return self.url
+
+    def _explain(self, failure: BaseException) -> BaseException:
+        """Turn the one failure users actually hit into actionable advice.
+
+        A bare "[Errno 48] address already in use" from deep inside the
+        websockets bind says nothing about which port, which library, or what
+        to do -- and leaving a previous dashboard running is far and away the
+        most common way to land here.
+        """
+        if isinstance(failure, OSError) and failure.errno == errno.EADDRINUSE:
+            return PortUnavailable(
+                errno.EADDRINUSE,
+                f"nnscope could not start: port {self._port} is already in use, "
+                f"usually by an earlier run whose dashboard is still open. "
+                f"Pass port=0 to take any free port, or port=<n> to pick one.",
+            )
+        return failure
 
     def stop(self, timeout: float = 5.0) -> None:
         """Shut the server down. Safe to call more than once, and safe to call
