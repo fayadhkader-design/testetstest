@@ -5,6 +5,27 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Reconnecting no longer duplicates history. Every reconnect replays the server's
+  retained buffer, and the client appended it wholesale on top of what it already
+  held — one blip doubled the timeline and folded the loss curve back on itself.
+- A dashboard left open across a restart no longer splices two runs together. Runs
+  now carry an id, and a changed id tears down the charts, legend and history first.
+- `Home` moved the view but left the timeline thumb where it was; the thumb now
+  follows the view wherever the move came from.
+- A port collision reports which port, that it is nnscope, and how to get past it,
+  instead of a bare `[Errno 48]` raised from inside the websockets bind.
+
+### Added
+
+- Keyboard control for the timeline: `←`/`→` to scrub (`Shift` for ten), `Home` for
+  the oldest retained frame, `End` for live. Single-stepping training moved from
+  `→` to `.`, so moving the view and moving the run are no longer the same gesture.
+- Frontend tests, on node's built-in runner. Still no dependencies and no build step.
+- CI jobs for the frontend tests and strict type checking.
+- Dependabot for GitHub Actions.
+
 ### Changed
 
 - Minimum Python is now 3.10. The previous 3.9 floor had never been run; the suite
