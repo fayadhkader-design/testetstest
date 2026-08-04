@@ -177,7 +177,8 @@ body {
   align-items: start;
 }
 
-.column { display: flex; flex-direction: column; gap: 16px; }
+.column,
+.stack { display: flex; flex-direction: column; gap: 16px; }
 
 .column__empty {
   margin: 0;
@@ -249,6 +250,63 @@ body {
   font-size: 10px;
   color: var(--ink-muted);
 }
+
+/* ---- gradient bars ----------------------------------------------------- */
+
+/* Deep models make this list long, so it scrolls inside the card rather than
+ * stretching the page. */
+.grads {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.grad {
+  display: grid;
+  grid-template-columns: minmax(0, 5.5rem) 1fr auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 22px;
+}
+
+.grad__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl; /* keep the distinguishing tail of a dotted path visible */
+  text-align: left;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.grad__track {
+  height: 8px;
+  border-radius: 2px;
+  background: var(--raised);
+  overflow: hidden;
+}
+
+/* One colour for every bar. Length already encodes magnitude; shading by it
+ * as well would burn the only free channel on information already shown. */
+.grad__bar {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--series-1);
+  min-width: 2px;
+}
+
+.grad__value {
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  min-width: 4.6rem;
+  text-align: right;
+}
+
+/* An exactly-zero gradient is a finding, not a small number. */
+.grad[data-zero="true"] .grad__value { color: var(--warning); }
 
 /* ---- legend ----------------------------------------------------------- */
 

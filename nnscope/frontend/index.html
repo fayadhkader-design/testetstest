@@ -52,8 +52,20 @@
       <p class="legend__note" id="legend-note" hidden></p>
     </section>
 
-    <div class="column" id="metrics">
-      <p class="column__empty" id="metrics-empty">no metrics reported yet</p>
+    <div class="column">
+      <div class="stack" id="metrics">
+        <p class="column__empty" id="metrics-empty">no metrics reported yet</p>
+      </div>
+
+      <section class="card" id="gradients-card" hidden aria-labelledby="gradients-title">
+        <div class="card__head">
+          <h2 id="gradients-title">Gradient norms</h2>
+          <p class="card__hint">
+            per layer &middot; log scale, six decades below the strongest
+          </p>
+        </div>
+        <div class="grads" id="grads"></div>
+      </section>
     </div>
 
   </main>

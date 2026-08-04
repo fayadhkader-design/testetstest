@@ -1,6 +1,13 @@
 /* Dashboard state, transport and wiring. */
 
-import { LineChart, ScatterPlot, cssVar, formatValue, seriesColor } from "./charts.js";
+import {
+  LineChart,
+  ScatterPlot,
+  barFraction,
+  cssVar,
+  formatValue,
+  seriesColor,
+} from "./charts.js";
 import { appendFrame, indexForStep, isSameRun } from "./history.js";
 
 const MAX_COLOURED_CLASSES = 8;
@@ -27,6 +34,8 @@ const state = {
 const view = {
   scatter: null,
   charts: new Map(),
+  gradientRows: new Map(),
+  gradientSignature: null,
   dirty: true,
   settle: 0,
 };
@@ -113,6 +122,10 @@ function resetRun() {
   state.viewStep = null;
 
   view.charts.clear();
+  view.gradientRows.clear();
+  view.gradientSignature = null;
+  el("gradients-card").hidden = true;
+
   const empty = el("metrics-empty");
   empty.hidden = false;
   el("metrics").replaceChildren(empty);
@@ -277,6 +290,8 @@ function render() {
   view.scatter.setFrame(embedding);
   view.scatter.draw();
 
+  renderGradients(frame);
+
   for (const [name, chart] of view.charts) {
     // The full history sets the axes; only the rewound prefix gets drawn.
     const points = state.frames.map((f) => ({ x: f.step, y: f.metrics?.[name] ?? null }));
@@ -290,6 +305,74 @@ function render() {
   }
 
   if (!el("table-view").hidden) renderTable();
+}
+
+/**
+ * Per-layer gradient bars.
+ *
+ * Rows are built once per layer set and then mutated in place. Rebuilding
+ * forty rows twenty times a second would churn the DOM for no reason, and it
+ * would also throw away any text the user was mid-selection on.
+ *
+ * The value column is deliberate: it makes the panel its own table view, so
+ * no reading here depends on being able to compare bar lengths by eye.
+ */
+function renderGradients(frame) {
+  const card = el("gradients-card");
+  const gradients = frame?.gradients;
+  card.hidden = !gradients;
+  if (!gradients) return;
+
+  const { layers, norms } = gradients;
+  const signature = layers.join(" ");
+  if (view.gradientSignature !== signature) {
+    buildGradientRows(layers);
+    view.gradientSignature = signature;
+  }
+
+  const largest = Math.max(...norms.filter((n) => Number.isFinite(n) && n > 0));
+  layers.forEach((layer, index) => {
+    const row = view.gradientRows.get(layer);
+    if (!row) return;
+
+    const norm = norms[index];
+    row.bar.style.width = `${barFraction(norm, largest) * 100}%`;
+    row.value.textContent = formatValue(norm);
+    row.root.dataset.zero = String(norm === 0);
+  });
+}
+
+function buildGradientRows(layers) {
+  const container = el("grads");
+  container.replaceChildren();
+  view.gradientRows = new Map();
+
+  for (const layer of layers) {
+    const root = document.createElement("div");
+    root.className = "grad";
+    root.title = layer;
+
+    // Layer names come from the user's own module attributes, but they still
+    // go in as text rather than markup -- there is no reason for a model to
+    // be able to write HTML into the dashboard.
+    const name = document.createElement("span");
+    name.className = "grad__name";
+    name.textContent = layer;
+
+    const track = document.createElement("span");
+    track.className = "grad__track";
+    const bar = document.createElement("i");
+    bar.className = "grad__bar";
+    track.appendChild(bar);
+
+    const value = document.createElement("span");
+    value.className = "grad__value num";
+    value.textContent = "—";
+
+    root.append(name, track, value);
+    container.appendChild(root);
+    view.gradientRows.set(layer, { root, bar, value });
+  }
 }
 
 function renderTable() {
