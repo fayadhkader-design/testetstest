@@ -90,6 +90,45 @@ def test_variance_and_rotation_are_included_when_given():
     assert frame["embedding"]["rotation"] == 0.00012
 
 
+def test_gradients_ship_as_parallel_arrays():
+    frame = build_frame(1, 0.0, {}, gradients={"body.0": 0.5, "head": 2.0})
+
+    assert frame["gradients"]["layers"] == ["body.0", "head"]
+    assert frame["gradients"]["norms"] == [0.5, 2.0]
+
+
+def test_gradients_are_omitted_when_absent_or_empty():
+    assert "gradients" not in build_frame(1, 0.0, {})
+    assert "gradients" not in build_frame(1, 0.0, {}, gradients={})
+
+
+def test_gradient_norms_keep_significant_figures_not_decimals():
+    """A vanishing gradient must not be rounded into a dead one."""
+    frame = build_frame(1, 0.0, {}, gradients={"early": 1.23456789e-11})
+
+    assert frame["gradients"]["norms"] == [1.2346e-11]
+
+
+def test_gradient_norms_survive_a_wide_spread_in_one_frame():
+    frame = build_frame(
+        1, 0.0, {}, gradients={"a": 3.21e-14, "b": 1.0, "c": 4.56e7}
+    )
+
+    norms = frame["gradients"]["norms"]
+    assert norms[0] == 3.21e-14
+    assert norms[2] == 45600000.0
+    json.loads(encode(frame))
+
+
+def test_zero_and_nonfinite_gradients_stay_encodable():
+    frame = build_frame(
+        1, 0.0, {}, gradients={"zero": 0.0, "blown": float("inf")}
+    )
+
+    assert frame["gradients"]["norms"] == [0.0, None]
+    json.loads(encode(frame))
+
+
 def test_parse_rejects_malformed_json():
     with pytest.raises(ProtocolError, match="not valid JSON"):
         parse_command("{oops")
