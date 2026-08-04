@@ -5,6 +5,19 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Per-layer gradient norms.** The panel a loss curve cannot replace: a flat loss
+  looks identical whether a network converged, an early layer's gradients vanished,
+  or a late one is exploding. Log scaled over six decades below the strongest layer.
+  Computed only on emitted frames, where the cost measured within noise (−0.3%);
+  every step would have cost about 15%. Off with `watch(..., gradients=False)`.
+- `examples/vanishing.py` — eight sigmoid layers under plain SGD that sit at chance
+  forever, with the gradient panel showing why. `--activation relu` fixes it,
+  `--optimizer adam` shows the pathology being papered over, and
+  `--activation relu --lr 1.0` fails the opposite way.
+- Frontend tests for the bar scale and value formatting.
+
 ### Fixed
 
 - Reconnecting no longer duplicates history. Every reconnect replays the server's

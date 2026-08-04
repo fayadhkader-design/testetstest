@@ -68,6 +68,18 @@ python examples/mnist.py
 
 A small CNN on MNIST. Downloads ~11 MB on first run.
 
+```bash
+python examples/vanishing.py                    # gradients vanish; nothing learns
+python examples/vanishing.py --activation relu  # the same network, fixed
+```
+
+Eight sigmoid layers, trained with plain SGD. The first run sits at chance
+forever, and the gradient panel shows exactly why: `body.0` receives a gradient
+seven orders of magnitude smaller than `head`, so the front of the network is
+never trained. The second run levels the bars out and separates the spirals
+within a few hundred steps. Both runs have a loss curve; only the panel tells
+you which one is actually training.
+
 ## What you can do while it's running
 
 | | |
@@ -76,6 +88,7 @@ A small CNN on MNIST. Downloads ~11 MB on first run.
 | **Pause / Step** | `Space` freezes between steps; `.` advances one at a time. |
 | **Learning rate** | Type a new one. It reaches the optimizer on the next step. |
 | **Shock** | Perturb every weight tensor by a fraction of its own standard deviation, then watch the clusters collapse and re-form. The fastest way to build intuition that training is a dynamical system and not a monotonic march downhill. |
+| **Read the gradients** | Per-layer gradient norms, log scaled over six decades below the strongest layer. A vanishing or exploding profile is visible at a glance, and an exactly-zero gradient is called out rather than drawn as a very short bar. |
 | **Isolate a class** | Click a legend chip to dim everything else. |
 | **Table** | Every value the charts draw, as numbers. |
 

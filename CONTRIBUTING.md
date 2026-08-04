@@ -63,11 +63,14 @@ Ruff enforces the rest (`line-length = 92`). Two things it can't check:
 
 ## Good first issues
 
-- A gradient-norm panel. The instrumentation layer is built to take more probes
-  than it currently ships; per-layer gradient norms are the most requested thing
-  a loss curve can't tell you.
 - Framework adapters. The core data layer is plain numpy and never imports torch —
   a TensorFlow or JAX capture layer would slot in beside `instrument.py`.
-- Keyboard navigation for the timeline scrubber.
 - A texture or shape channel for the scatter, so class identity survives print
   and forced-colors mode.
+- Weight and activation histograms, alongside the gradient panel. `gradients.py`
+  is the shape to copy: a pure reduction over the model, called only from
+  `Scope._emit` so it runs on throttled frames rather than on every step.
+- Per-layer gradient *history* — the panel shows the current profile, but a
+  layer that died at step 800 is only visible if you happen to rewind there.
+- More frontend tests. `tests/frontend/` covers the pure helpers; the canvas
+  renderers in `charts.js` have none.
