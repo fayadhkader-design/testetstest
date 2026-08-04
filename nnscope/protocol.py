@@ -54,6 +54,20 @@ def _round(value: float, places: int) -> float | None:
     return None if number is None else round(number, places)
 
 
+def _signif(value: float, digits: int = 5) -> float | None:
+    """Round to significant figures rather than decimal places.
+
+    Gradient norms routinely span ten orders of magnitude in one model, and
+    fixed decimal places would flatten every small one to zero -- which is
+    exactly the reading the panel exists to distinguish from a dead layer.
+    """
+    number = _finite(value)
+    if number is None or number == 0:
+        return number
+    exponent = math.floor(math.log10(abs(number)))
+    return round(number, -exponent + (digits - 1))
+
+
 def encode(message: dict[str, Any]) -> str:
     return json.dumps(message, separators=(",", ":"), allow_nan=False)
 
@@ -94,6 +108,7 @@ def build_frame(
     labels: Iterable[int] | None = None,
     explained_variance: float | None = None,
     rotation: float | None = None,
+    gradients: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """Assemble one JSON-safe frame.
 
@@ -136,6 +151,15 @@ def build_frame(
         if rotation is not None:
             embedding["rotation"] = _round(rotation, 5)
         frame["embedding"] = embedding
+
+    if gradients:
+        # Parallel arrays, like the embedding: names repeat every frame, but
+        # each frame staying self-contained is what makes rewind a lookup
+        # rather than a reconstruction.
+        frame["gradients"] = {
+            "layers": list(gradients),
+            "norms": [_signif(value) for value in gradients.values()],
+        }
 
     return frame
 
