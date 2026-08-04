@@ -198,6 +198,39 @@ def test_run_info_reports_the_model_and_device(model, scope):
     assert info["device"] == "cpu"
 
 
+def test_frames_carry_gradient_norms(model, scope):
+    train_step(model, scope)
+
+    gradients = scope._buffer.latest()["gradients"]
+    assert gradients["layers"] == ["0", "2"]
+    assert all(norm > 0 for norm in gradients["norms"])
+
+
+def test_gradients_can_be_turned_off(model):
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    with Scope(
+        model, optimizer, port=0, open_browser=False,
+        min_interval=0.0, gradients=False,
+    ) as scope:
+        train_step(model, scope)
+
+        assert "gradients" not in scope._buffer.latest()
+
+
+def test_cleared_gradients_are_absent_rather_than_faked(model):
+    """Calling zero_grad before log leaves nothing to read; say so honestly."""
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    with Scope(
+        model, optimizer, port=0, open_browser=False, min_interval=0.0
+    ) as scope:
+        x = torch.randn(8, 6)
+        nn.functional.cross_entropy(model(x), torch.randint(0, 3, (8,))).backward()
+        model.zero_grad(set_to_none=True)
+        scope.log(loss=1.0)
+
+        assert "gradients" not in scope._buffer.latest()
+
+
 def test_run_info_carries_an_id(model, scope):
     assert scope._run_info()["id"]
 

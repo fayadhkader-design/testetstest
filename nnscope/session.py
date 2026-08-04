@@ -30,6 +30,7 @@ from torch import nn
 from . import protocol
 from .buffer import FrameBuffer
 from .control import Controls
+from .gradients import layer_gradient_norms
 from .instrument import EmbeddingCapture
 from .projection import StableProjector
 from .server import DashboardServer
@@ -51,6 +52,10 @@ class Scope:
         min_interval: Seconds between emitted frames. A loop running at
             thousands of steps per second would otherwise spend real time
             serializing frames no one can see.
+        gradients: Collect per-layer gradient norms. Computed only on emitted
+            frames, where the cost is unmeasurable; set False if you call
+            ``zero_grad`` before ``log`` and would rather not pay for a
+            reading that is always empty.
         open_browser: Open the dashboard on start.
     """
 
@@ -66,6 +71,7 @@ class Scope:
         min_interval: float = 0.05,
         max_points: int = 512,
         momentum: float = 0.15,
+        gradients: bool = True,
         open_browser: bool = True,
         name: str | None = None,
         start_paused: bool = False,
@@ -81,6 +87,7 @@ class Scope:
 
         self._capture = EmbeddingCapture(model, module=embedding, max_points=max_points)
         self._projector = StableProjector(momentum=momentum)
+        self._track_gradients = gradients
         self._buffer = FrameBuffer(capacity=capacity)
         self._controls = Controls(paused=start_paused)
 
@@ -201,6 +208,7 @@ class Scope:
                 labels=label_list,
                 explained_variance=explained,
                 rotation=rotation,
+                gradients=self._gradients(),
             )
         except (TypeError, ValueError):
             # A visualizer must never be the reason a training run dies.
@@ -224,6 +232,18 @@ class Scope:
         if len(values) < count:
             return None  # mismatched batch; better no colour than wrong colour
         return [int(value) for value in values[:count]]
+
+    def _gradients(self) -> dict[str, float] | None:
+        """Per-layer gradient norms, if they are being collected.
+
+        Called only from _emit, so this runs on emitted frames rather than on
+        every step. That distinction is the whole cost story: measured on an
+        MNIST CNN on MPS, computing norms every step costs about 15% of step
+        time, while doing it on throttled frames is lost in the noise.
+        """
+        if not self._track_gradients:
+            return None
+        return layer_gradient_norms(self._model)
 
     def _learning_rate(self) -> float | None:
         if self._optimizer is None or not self._optimizer.param_groups:
