@@ -35,6 +35,29 @@ export function formatValue(value) {
   return value.toFixed(1);
 }
 
+/** How many orders of magnitude below the largest norm the bar scale spans. */
+export const GRADIENT_DECADES = 6;
+
+/**
+ * Where a gradient norm sits on the bar scale, as a fraction in [0, 1].
+ *
+ * Log scaled and measured down from the largest norm in the frame rather
+ * than up from the smallest. Norms routinely span ten orders of magnitude,
+ * and anchoring to the frame minimum would rescale the whole panel whenever
+ * one layer twitched -- so "how many decades below the strongest layer" is
+ * both the stable reading and the one that answers the actual question.
+ *
+ * Zero and non-finite norms return 0: they get no bar, and the value column
+ * beside it says what they really are.
+ */
+export function barFraction(value, max, decades = GRADIENT_DECADES) {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (!Number.isFinite(max) || max <= 0) return 0;
+
+  const span = (Math.log10(value) - Math.log10(max)) / decades + 1;
+  return Math.min(1, Math.max(0, span));
+}
+
 /** Handles device-pixel-ratio scaling so lines land on whole pixels. */
 class Layer {
   constructor(canvas) {
