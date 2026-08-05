@@ -5,6 +5,17 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A closed `Scope` no longer pins the model it was watching. `close()` left its
+  `atexit` registration in place, and that registry holds the bound method, which
+  holds the Scope, which holds the model — so every model ever watched stayed
+  resident, with its device memory allocated, for the whole process. Sweeps,
+  cross-validation loops and re-run notebook cells paid for this permanently.
+- Removed a NUL byte from `app.js`. It ran correctly but made the file binary to
+  `file`, `grep` and GitHub's diff view, so searching the frontend silently
+  returned nothing.
+
 ### Added
 
 - **Per-layer gradient norms.** The panel a loss curve cannot replace: a flat loss
@@ -17,6 +28,12 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
   `--optimizer adam` shows the pathology being papered over, and
   `--activation relu --lr 1.0` fails the opposite way.
 - Frontend tests for the bar scale and value formatting.
+- Each gradient bar now carries a shaded band showing the range that layer has
+  covered over the retained window. The panel previously showed only the instant
+  you were looking at, so a layer that collapsed at step 800 and recovered by 900
+  left no trace unless you happened to scrub onto exactly that stretch. The band
+  stops at the frame in view, so a rewound reading cannot see the future.
+- A test that the shipped frontend assets are valid UTF-8 with no control bytes.
 
 ### Fixed
 
