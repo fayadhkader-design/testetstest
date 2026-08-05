@@ -163,6 +163,12 @@ class Scope:
         self._capture.close()
         self._server.stop()
 
+        # The atexit registry holds this bound method, which holds the Scope,
+        # which holds the model. Without dropping it, every model ever watched
+        # stays alive -- and its device memory allocated -- for the lifetime of
+        # the process, which a sweep or a notebook session notices quickly.
+        atexit.unregister(self.close)
+
     def __enter__(self) -> Scope:
         return self
 
