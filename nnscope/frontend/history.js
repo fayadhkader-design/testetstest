@@ -42,6 +42,43 @@ export function appendFrame(frames, frame, capacity) {
 }
 
 /**
+ * The range each layer's gradient norm has covered over the retained window,
+ * as a Map of layer name to {min, max}.
+ *
+ * The panel otherwise only ever shows the instant you are looking at, so a
+ * layer that collapsed at step 800 and recovered by step 900 leaves no trace
+ * unless you happen to scrub onto exactly that stretch. Drawing the range
+ * behind the current bar makes the excursion visible without hunting for it.
+ *
+ * Stops at `upTo` so a rewound view reports the run as it stood then, rather
+ * than leaking future frames into the past.
+ */
+export function gradientRange(frames, upTo = frames.length) {
+  const ranges = new Map();
+  const limit = Math.min(upTo, frames.length);
+
+  for (let index = 0; index < limit; index++) {
+    const gradients = frames[index]?.gradients;
+    if (!gradients) continue;
+
+    const { layers, norms } = gradients;
+    for (let slot = 0; slot < layers.length; slot++) {
+      const norm = norms[slot];
+      if (!Number.isFinite(norm)) continue;
+
+      const seen = ranges.get(layers[slot]);
+      if (!seen) {
+        ranges.set(layers[slot], { min: norm, max: norm });
+      } else {
+        if (norm < seen.min) seen.min = norm;
+        if (norm > seen.max) seen.max = norm;
+      }
+    }
+  }
+  return ranges;
+}
+
+/**
  * Index of the frame to display for a given step, or the newest frame when
  * `step` is null (live).
  *
