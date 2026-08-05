@@ -282,15 +282,28 @@ body {
 }
 
 .grad__track {
+  position: relative;
   height: 8px;
   border-radius: 2px;
   background: var(--raised);
   overflow: hidden;
 }
 
+/* The span this layer has covered over the retained window, drawn behind the
+ * current value so an excursion it has already recovered from stays visible. */
+.grad__range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: var(--series-1);
+  opacity: 0.24;
+}
+
 /* One colour for every bar. Length already encodes magnitude; shading by it
  * as well would burn the only free channel on information already shown. */
 .grad__bar {
+  position: relative; /* above the range band */
   display: block;
   height: 100%;
   border-radius: 2px;

@@ -8,7 +8,12 @@ import {
   formatValue,
   seriesColor,
 } from "./charts.js";
-import { appendFrame, indexForStep, isSameRun } from "./history.js";
+import {
+  appendFrame,
+  gradientRange,
+  indexForStep,
+  isSameRun,
+} from "./history.js";
 
 const MAX_COLOURED_CLASSES = 8;
 const MAX_HIGHLIGHTS = 3;
@@ -331,6 +336,8 @@ function renderGradients(frame) {
   }
 
   const largest = Math.max(...norms.filter((n) => Number.isFinite(n) && n > 0));
+  const ranges = gradientRange(state.frames, currentIndex() + 1);
+
   layers.forEach((layer, index) => {
     const row = view.gradientRows.get(layer);
     if (!row) return;
@@ -339,6 +346,20 @@ function renderGradients(frame) {
     row.bar.style.width = `${barFraction(norm, largest) * 100}%`;
     row.value.textContent = formatValue(norm);
     row.root.dataset.zero = String(norm === 0);
+
+    const seen = ranges.get(layer);
+    if (!seen) {
+      row.range.hidden = true;
+      return;
+    }
+    // Both ends clamp inside barFraction, so a historical peak above the
+    // current frame's maximum flattens against the right edge rather than
+    // overflowing the track.
+    const low = barFraction(seen.min, largest);
+    const high = barFraction(seen.max, largest);
+    row.range.hidden = high - low < 0.005;
+    row.range.style.left = `${low * 100}%`;
+    row.range.style.width = `${(high - low) * 100}%`;
   });
 }
 
@@ -361,9 +382,12 @@ function buildGradientRows(layers) {
 
     const track = document.createElement("span");
     track.className = "grad__track";
+    const range = document.createElement("i");
+    range.className = "grad__range";
+    range.hidden = true;
     const bar = document.createElement("i");
     bar.className = "grad__bar";
-    track.appendChild(bar);
+    track.append(range, bar);
 
     const value = document.createElement("span");
     value.className = "grad__value num";
@@ -371,7 +395,7 @@ function buildGradientRows(layers) {
 
     root.append(name, track, value);
     container.appendChild(root);
-    view.gradientRows.set(layer, { root, bar, value });
+    view.gradientRows.set(layer, { root, bar, value, range });
   }
 }
 
