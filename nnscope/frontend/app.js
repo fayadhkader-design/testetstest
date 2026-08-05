@@ -324,7 +324,7 @@ function renderGradients(frame) {
   if (!gradients) return;
 
   const { layers, norms } = gradients;
-  const signature = layers.join(" ");
+  const signature = layers.join(" ");
   if (view.gradientSignature !== signature) {
     buildGradientRows(layers);
     view.gradientSignature = signature;
