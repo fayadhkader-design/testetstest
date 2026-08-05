@@ -1,3 +1,6 @@
+import gc
+import weakref
+
 import numpy as np
 import pytest
 import torch
@@ -265,6 +268,47 @@ def test_close_is_idempotent_and_releases_the_loop(model, scope):
 
     assert scope._controls.released
     assert scope._controls.gate(timeout=0.1) is True
+
+
+def test_closing_releases_the_model():
+    """A closed Scope must not pin the model it was watching.
+
+    atexit holds the registered bound method, which holds the Scope, which
+    holds the model -- so without unregistering, every model ever watched
+    stays alive, and its device memory allocated, for the whole process. A
+    sweep or a notebook session notices that fast.
+
+    Asserted on liveness rather than atexit's callback count, which does not
+    decrease on unregister and so cannot tell the two cases apart.
+
+    The model is built here rather than taken from the fixture: pytest holds
+    its own reference to a fixture value for the length of the test, which
+    would keep the weakref alive no matter what Scope did.
+    """
+    net = nn.Sequential(nn.Linear(6, 12), nn.ReLU(), nn.Linear(12, 3))
+    reference = weakref.ref(net)
+
+    scope = Scope(net, port=0, open_browser=False)
+    scope.close()
+
+    del scope, net
+    gc.collect()
+
+    assert reference() is None, "the model outlived the scope that watched it"
+
+
+def test_many_scopes_do_not_accumulate(model):
+    references = []
+    for _ in range(3):
+        net = nn.Sequential(nn.Linear(4, 8), nn.Linear(8, 2))
+        scope = Scope(net, port=0, open_browser=False)
+        references.append(weakref.ref(net))
+        scope.close()
+        del scope, net
+
+    gc.collect()
+
+    assert [ref() for ref in references] == [None, None, None]
 
 
 def test_logging_after_close_is_a_noop(model, scope):
