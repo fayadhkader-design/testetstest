@@ -72,5 +72,8 @@ Ruff enforces the rest (`line-length = 92`). Two things it can't check:
   `Scope._emit` so it runs on throttled frames rather than on every step.
 - Per-layer gradient *history* — the panel shows the current profile, but a
   layer that died at step 800 is only visible if you happen to rewind there.
-- More frontend tests. `tests/frontend/` covers the pure helpers; the canvas
-  renderers in `charts.js` have none.
+- More frontend tests. `tests/frontend/` now covers the pure helpers and
+  `LineChart`'s geometry; `ScatterPlot` and both `draw()` paths still have none,
+  because they read theme colours off the document. Anything that needs a real
+  DOM is genuinely untested here — the metric-card rendering was fixed after a
+  bug that only a browser caught. Worth solving, but not by adding a bundler.

@@ -47,6 +47,8 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
   left no trace unless you happened to scrub onto exactly that stretch. The band
   stops at the frame in view, so a rewound reading cannot see the future.
 - A test that the shipped frontend assets are valid UTF-8 with no control bytes.
+- Tests for `LineChart`'s geometry: range, log-scale selection, rewind clamping
+  and hit-testing.
 
 ### Fixed
 
