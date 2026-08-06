@@ -234,6 +234,21 @@ def test_cleared_gradients_are_absent_rather_than_faked(model):
         assert "gradients" not in scope._buffer.latest()
 
 
+def test_hostile_metric_names_reach_the_frame_intact(model, scope):
+    """The dashboard has to render these safely; the wire must not mangle them.
+
+    A name containing a quote used to break the metric card's generated id,
+    collide with another card's, and freeze the dashboard permanently.
+    """
+    x = torch.randn(8, 6)
+    model(x)
+    scope.log(**{'loss" onx="': 1.0, "loss<b>": 2.0})
+
+    metrics = scope._buffer.latest()["metrics"]
+    assert metrics['loss" onx="'] == 1.0
+    assert metrics["loss<b>"] == 2.0
+
+
 def test_run_info_carries_an_id(model, scope):
     assert scope._run_info()["id"]
 

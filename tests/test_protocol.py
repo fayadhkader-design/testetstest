@@ -129,6 +129,26 @@ def test_zero_and_nonfinite_gradients_stay_encodable():
     json.loads(encode(frame))
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        'loss" onx="',
+        "loss<sub>train</sub>",
+        "val loss",
+        "loss/train",
+        "acc@5",
+        "träningsförlust",
+        "损失",
+    ],
+)
+def test_arbitrary_metric_names_survive_the_wire(name):
+    """Metric names arrive through **kwargs, which Python does not require to
+    be identifiers -- so any text at all can reach the dashboard."""
+    frame = build_frame(1, 0.0, {name: 0.5})
+
+    assert json.loads(encode(frame))["metrics"][name] == 0.5
+
+
 def test_parse_rejects_malformed_json():
     with pytest.raises(ProtocolError, match="not valid JSON"):
         parse_command("{oops")
