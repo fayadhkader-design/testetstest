@@ -7,6 +7,19 @@ versions follow [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A metric name containing a quote froze the dashboard permanently.** Metric
+  names arrive through `**kwargs`, which Python does not require to be
+  identifiers, so a name is arbitrary text. It was interpolated into markup and
+  into generated element ids; a quote truncated the id attribute, two cards ended
+  up sharing ids, the second lookup returned `null`, `render()` threw — and since
+  the loop rescheduled itself only on the success path, the dashboard stopped and
+  never recovered. Silently: the page looked exactly like a run that had gone
+  quiet. Cards are now built as elements with `textContent` and held by direct
+  reference, so no ids are generated at all.
+- Metric names are no longer injected as live markup.
+- A render failure now costs one frame instead of the whole dashboard: the
+  animation loop reschedules in a `finally`, and logs the fault once.
+
 - A closed `Scope` no longer pins the model it was watching. `close()` left its
   `atexit` registration in place, and that registry holds the bound method, which
   holds the Scope, which holds the model — so every model ever watched stayed
