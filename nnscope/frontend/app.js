@@ -43,6 +43,8 @@ const view = {
   gradientSignature: null,
   dirty: true,
   settle: 0,
+  /** Set once, so a repeating render fault logs once instead of per frame. */
+  renderFailed: false,
 };
 
 /* ---- derived state ------------------------------------------------------ */
@@ -218,21 +220,54 @@ function applyControlState() {
   }
 }
 
+/**
+ * Build one metric card.
+ *
+ * Every part is constructed as an element and the pieces are kept as direct
+ * references, rather than being interpolated into markup and looked up by a
+ * generated id. Metric names come from **kwargs, and Python does not require
+ * those keys to be identifiers, so a name is arbitrary text.
+ *
+ * Interpolating it was doubly wrong: it injected the name as live markup, and
+ * a name containing a quote truncated the id attribute so two cards ended up
+ * sharing ids. The second lookup then returned null, render() threw, and the
+ * dashboard froze for good.
+ */
 function buildMetricCard(name) {
   el("metrics-empty").hidden = true;
 
   const card = document.createElement("section");
   card.className = "card metric";
-  card.innerHTML = `
-    <div class="card__head"><h2>${name}</h2></div>
-    <p class="metric__value" id="value-${name}">—</p>
-    <div class="plot"><canvas></canvas></div>
-    <p class="metric__foot"><span id="min-${name}">—</span><span id="max-${name}">—</span></p>`;
+
+  const head = document.createElement("div");
+  head.className = "card__head";
+  const title = document.createElement("h2");
+  title.textContent = name;
+  head.appendChild(title);
+
+  const value = document.createElement("p");
+  value.className = "metric__value";
+  value.textContent = "—";
+
+  const plot = document.createElement("div");
+  plot.className = "plot";
+  const canvas = document.createElement("canvas");
+  plot.appendChild(canvas);
+
+  const foot = document.createElement("p");
+  foot.className = "metric__foot";
+  const low = document.createElement("span");
+  low.textContent = "—";
+  const high = document.createElement("span");
+  high.textContent = "—";
+  foot.append(low, high);
+
+  card.append(head, value, plot, foot);
   el("metrics").appendChild(card);
 
-  const chart = new LineChart(card.querySelector("canvas"), { color: metricColor(name) });
-  view.charts.set(name, chart);
-  attachLineHover(card.querySelector("canvas"), chart, name);
+  const chart = new LineChart(canvas, { color: metricColor(name) });
+  view.charts.set(name, { chart, value, low, high });
+  attachLineHover(canvas, chart, name);
 }
 
 function buildLegend() {
@@ -257,7 +292,12 @@ function buildLegend() {
     button.setAttribute("aria-pressed", String(state.selected.has(label)));
     button.dataset.dimmed = String(state.selected.size > 0 && !state.selected.has(label));
     button.style.setProperty("--swatch", colors.get(label) ?? cssVar("--ink-muted"));
-    button.innerHTML = `<span class="legend__swatch" aria-hidden="true"></span>${label}`;
+    // Labels are ints server-side, so this one was never exploitable -- but
+    // keeping the rule uniform is what stops the next one from being.
+    const swatch = document.createElement("span");
+    swatch.className = "legend__swatch";
+    swatch.setAttribute("aria-hidden", "true");
+    button.append(swatch, document.createTextNode(String(label)));
     button.addEventListener("click", () => toggleClass(label));
     legend.appendChild(button);
   }
@@ -297,16 +337,18 @@ function render() {
 
   renderGradients(frame);
 
-  for (const [name, chart] of view.charts) {
+  for (const [name, card] of view.charts) {
+    const { chart, value, low, high } = card;
+
     // The full history sets the axes; only the rewound prefix gets drawn.
     const points = state.frames.map((f) => ({ x: f.step, y: f.metrics?.[name] ?? null }));
     chart.setData(points, index + 1);
     chart.draw();
 
-    el(`value-${name}`).textContent = formatMetric(name, frame?.metrics?.[name]);
+    value.textContent = formatMetric(name, frame?.metrics?.[name]);
     const [min, max] = chart.range;
-    el(`min-${name}`).textContent = Number.isFinite(min) ? `min ${formatValue(min)}` : "—";
-    el(`max-${name}`).textContent = Number.isFinite(max) ? `max ${formatValue(max)}` : "—";
+    low.textContent = Number.isFinite(min) ? `min ${formatValue(min)}` : "—";
+    high.textContent = Number.isFinite(max) ? `max ${formatValue(max)}` : "—";
   }
 
   if (!el("table-view").hidden) renderTable();
@@ -428,12 +470,26 @@ function renderTable() {
 }
 
 function loop() {
-  if (view.dirty || view.settle > 0) {
-    view.settle = Math.max(0, view.settle - 1);
-    view.dirty = false;
-    render();
+  // The rescheduling lives in `finally` deliberately. Before this, a throw
+  // anywhere in render() skipped the next requestAnimationFrame, so a single
+  // bad frame stopped the dashboard permanently -- and silently, since the
+  // page carried on looking exactly like a run that had gone quiet.
+  //
+  // One broken frame should cost one frame.
+  try {
+    if (view.dirty || view.settle > 0) {
+      view.settle = Math.max(0, view.settle - 1);
+      view.dirty = false;
+      render();
+    }
+  } catch (error) {
+    if (!view.renderFailed) {
+      view.renderFailed = true;
+      console.error("nnscope: render failed; continuing", error);
+    }
+  } finally {
+    requestAnimationFrame(loop);
   }
-  requestAnimationFrame(loop);
 }
 
 /* ---- tooltips ----------------------------------------------------------- */
